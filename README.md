@@ -23,6 +23,7 @@ cd tntblast-2.04
 ./configure --enable-mpi
 make
 sudo make install
+cd ..
 ```
 
 #### Get and Install [HTSlib][3]
