@@ -26,13 +26,14 @@ sudo make install
 cd ..
 ```
 
-#### Get and Install [HTSlib][3]
+#### Get and Install [HTSlib][3] and [Pysam][6]
 ```
 wget http://github.com/samtools/htslib/archive/1.6.tar.gz
 tar zvfx 1.6.tar.gz
 cd htslib-1.6
 make
 sudo make install
+pip install pysam
 ```
 
 #### Get Reference, Annotation, and Variants from [The Genome Reference Consortium][4] and [dbSNP][5]
@@ -60,4 +61,5 @@ The work has been supported by RSF grant [#16-45-02011][9].
 [3]: http://www.htslib.org
 [4]: http://www.ncbi.nlm.nih.gov/grc/human
 [5]: http://www.ncbi.nlm.nih.gov/SNP
+[6]: http://pysam.readthedocs.io/en/latest/installation.html
 [9]: http://rscf.ru/en/enprjcard?rid=16-45-02011
