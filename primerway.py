@@ -1,14 +1,15 @@
 #!/usr/bin/python
-import gzip
-import re
-import sys
-import os
 import getopt
-import pysam
-import subprocess
-import vcf
+import gzip
 import math
+import os
+import re
+import subprocess
+import sys
+
 import primer3
+import pysam
+import vcf
 
 try:
               opts,args = getopt.getopt(sys.argv[1:],"hvG:R:V:i:o:p:r:a:n:s:d:")
@@ -21,10 +22,10 @@ maxtargetlength = 50
 flanking = 300
 #flanking = 500 
 overlap = 20
-penalty_PCR_product=100
-penalty_base_level=3
-pertarget=300
-pertntblast=600
+penalty_PCR_product = 100
+penalty_base_level = 3
+pertarget = 300
+pertntblast = 600
 
 p3seq={
               'SEQUENCE_ID': 'example',
