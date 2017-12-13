@@ -22,8 +22,8 @@ flanking = 300
 overlap = 20
 penalty_PCR_product = 100
 penalty_base_level = 3
-pertarget = 300
-pertntblast = 600
+per_target = 300
+per_tntblast = 600
 
 p3seq = {
     'SEQUENCE_ID': 'example',
@@ -50,7 +50,7 @@ p3prim = dict(
     PRIMER_PAIR_WT_COMPL_ANY_TH=1,
     RIMER_PAIR_WT_COMPL_END_TH=2,
     PRIMER_EXPLAIN_FLAG=1,
-    PRIMER_NUM_RETURN=pertarget
+    PRIMER_NUM_RETURN=per_target
 )
 
 verbose = False
@@ -255,7 +255,7 @@ for search in searches:
 
         result = primer3.bindings.designPrimers(p3seq, p3prim)
 
-        for i in xrange(pertarget):
+        for i in xrange(per_target):
             si = str(i)
             spair = (result['PRIMER_LEFT_' + si + '_SEQUENCE'], result['PRIMER_RIGHT_' + si + '_SEQUENCE'])
             pairs[spair] = [
@@ -276,7 +276,7 @@ for search in searches:
         i += 1
         complete += 1
         s += "_".join(pair) + "\t" + pair[0] + "\t" + pair[1] + "\n"
-        if (i >= pertntblast) | (pair == pairs.keys()[-1]):
+        if (i >= per_tntblast) | (pair == pairs.keys()[-1]):
             if verbose: print s
             print ("Tntblast: " + str(complete) + " of " + str(len(pairs)))
             proc = subprocess.Popen((
@@ -317,7 +317,7 @@ for search in searches:
                 graph[pair1] = graph.get(pair1, [])
                 graph[pair1].append(pair2)
 
-    pairs["END"] = [0, 0, 0, 0];
+    pairs["END"] = [0, 0, 0, 0]
     Visited = {}
     to_visit = {"START": 0}
     Paths = {"START": ["START"]}
