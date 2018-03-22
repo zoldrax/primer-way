@@ -11,6 +11,157 @@ import primer3
 import pysam
 import vcf
 
+
+def get_pseudo_qualities_from_VCF(VCF_file, target_region):
+    pseudo_qualities = []
+    if VCF_file != "":
+        vcf_reader = vcf.Reader(filename=VCF_file)
+        for i in target_region[2]:
+            try:
+                variants = vcf_reader.fetch(target_region[1], i - 1, i)
+            except:
+                variants = vcf_reader.fetch(target_region[1][3:], i - 1, i)
+            qual = 0.0001
+            for variant in variants:
+                try:
+                    q = 1.0 - float(variant.INFO["CAF"][0])
+                    if q > qual:
+                        qual = q
+                except:
+                    pass
+            pseudo_qualities.append(int(-10.0 * math.log10(qual)))
+    return pseudo_qualities
+
+def get_candidate_pairs(sequence, left_edge, right_edge, step):
+    candidate_pairs = {}
+    p3seq = {
+        'SEQUENCE_ID': 'example',
+        'SEQUENCE_TEMPLATE': ''
+    }
+    p3prim = dict(
+        PRIMER_QUALITY_RANGE_MAX=40,
+        PRIMER_WT_SEQ_QUAL=0.03,
+        PRIMER_WT_END_QUAL=0.1,
+        PRIMER_PICK_LEFT_PRIMER=1,
+        PRIMER_PICK_RIGHT_PRIMER=1,
+        PRIMER_MAX_END_GC=3,
+        PRIMER_MAX_POLY_X=4,
+        PRIMER_PRODUCT_SIZE_RANGE=[[50, 300]],
+        PRIMER_MAX_TM=65,
+        PRIMER_WT_SIZE_LT=0.5,
+        PRIMER_WT_SIZE_GT=0.5,
+        PRIMER_WT_TM_LT=0.1,
+        PRIMER_WT_TM_HT=0.05,
+        PRIMER_PAIR_WT_DIFF_TM=0.3,
+        PRIMER_WT_HAIRPIN_TH=2,
+        PRIMER_WT_SELF_ANY_TH=1,
+        PRIMER_WT_SELF_END_TH=2,
+        PRIMER_PAIR_WT_COMPL_ANY_TH=1,
+        RIMER_PAIR_WT_COMPL_END_TH=2,
+        PRIMER_EXPLAIN_FLAG=1,
+        PRIMER_NUM_RETURN=per_target
+    )
+    for i in range(left_edge, right_edge, step):
+        target_length = right_edge - i
+        if target_length > max_target_length:
+            target_length = max_target_length
+
+        p3seq['SEQUENCE_TEMPLATE'] = sequence
+
+        if variant_file != "":
+            p3seq['SEQUENCE_QUALITY'] = l_quality
+        else:
+            p3prim['PRIMER_WT_SEQ_QUAL'] = 0
+            p3prim['PRIMER_WT_END_QUAL'] = 0
+
+        if as_coord == "":
+            if deletion == "":
+                p3seq['SEQUENCE_TARGET'] = [i, target_length]
+            else:
+                p3seq['SEQUENCE_TARGET'] = [(flanking + 20), 2]
+        else:
+            if exon < 2:
+                p3seq['SEQUENCE_FORCE_LEFT_END'] = 50
+            else:
+                p3seq['SEQUENCE_FORCE_RIGHT_END'] = 500
+
+        result = primer3.bindings.designPrimers(p3seq, p3prim)
+
+        for i in xrange(per_target):
+            si = str(i)
+            spair = (
+            result.get('PRIMER_LEFT_' + si + '_SEQUENCE', ''), result.get('PRIMER_RIGHT_' + si + '_SEQUENCE', ''))
+            if spair[0] != '':
+                candidate_pairs[spair] = [
+                    result['PRIMER_LEFT_' + si][0] + result['PRIMER_LEFT_' + si][1] + 1,
+                    result['PRIMER_RIGHT_' + si][0] - result['PRIMER_RIGHT_' + si][1],
+                    result['PRIMER_PAIR_' + si + '_PENALTY'],
+                    0
+                ]
+
+        for pair in candidate_pairs:
+            if (pair[0][-1] in set("ATat")) | (pair[1][-1] in set("ATat")):
+                candidate_pairs[pair][2] += 1
+    return candidate_pairs
+
+def add_penalty_for_non_specific_pairs(candidate_pairs):
+    s = ""
+    i = 0
+    complete = 0
+    for pair in candidate_pairs:
+        i += 1
+        complete += 1
+        s += "_".join(pair) + "\t" + pair[0] + "\t" + pair[1] + "\n"
+        if (i >= per_tntblast) | (pair == candidate_pairs.keys()[-1]):
+            if verbose: print s
+            print ("Tntblast: " + str(complete) + " of " + str(len(candidate_pairs)))
+            proc = subprocess.Popen((
+                                            "nice -1 tntblast -i /dev/stdin -d " + reference_file + " -g -5 -l 1000 --temperature 330 --primer-clamp 1").split(),
+                                    stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            proc.stdin.write(s)
+            s = ""
+            i = 0
+            proc.stdin.close()
+            result = proc.stdout.read()
+            proc.wait()
+            pcrs = re.findall("name = (\w+)", result)
+            for pcr in pcrs:
+                candidate_pairs[tuple(pcr.split('_'))][3] += 1
+                candidate_pairs[tuple(pcr.split('_'))][2] += penalty_PCR_product
+    return candidate_pairs
+
+def get_the_best_way (penalised_pairs, left_edge, right_edge):
+    graph = {"START": []}
+    for pair1 in penalised_pairs:
+        if penalised_pairs[pair1][0] < left_edge: graph["START"].append(pair1)
+        if penalised_pairs[pair1][1] > right_edge:
+            graph[pair1] = graph.get(pair1, [])
+            graph[pair1].append("END")
+        for pair2 in penalised_pairs:
+            if penalised_pairs[pair2][0] < (penalised_pairs[pair1][1] - overlap):
+                graph[pair1] = graph.get(pair1, [])
+                graph[pair1].append(pair2)
+
+    penalised_pairs["END"] = [0, 0, 0, 0]
+    Visited = {}
+    to_visit = {"START": 0}
+    Paths = {"START": ["START"]}
+    while to_visit:
+        v = min(to_visit, key=lambda x: to_visit[x])
+        Visited[v] = to_visit[v]
+        del to_visit[v]
+        for w in graph.get(v, []):
+            if w not in Visited:
+                vwLength = Visited[v] + ((penalised_pairs[w][2] - penalty_PCR_product) ** 2) + penalty_base_level
+                if (w not in to_visit) or (vwLength < to_visit[w]):
+                    to_visit[w] = vwLength
+                    Paths[w] = Paths[v] + [w]
+    try:
+        best_way = Paths["END"][1:-1]
+    except:
+        best_way = []
+    return best_way
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], "hvG:R:V:i:o:p:r:a:n:s:d:")
 except:
@@ -25,38 +176,10 @@ penalty_base_level = 3
 per_target = 300
 per_tntblast = 600
 
-p3seq = {
-    'SEQUENCE_ID': 'example',
-    'SEQUENCE_TEMPLATE': ''
-}
-p3prim = dict(
-    PRIMER_QUALITY_RANGE_MAX=40,
-    PRIMER_WT_SEQ_QUAL=0.03,
-    PRIMER_WT_END_QUAL=0.1,
-    PRIMER_PICK_LEFT_PRIMER=1,
-    PRIMER_PICK_RIGHT_PRIMER=1,
-    PRIMER_MAX_END_GC=3,
-    PRIMER_MAX_POLY_X=4,
-    PRIMER_PRODUCT_SIZE_RANGE=[[50, 300]],
-    PRIMER_MAX_TM=65,
-    PRIMER_WT_SIZE_LT=0.5,
-    PRIMER_WT_SIZE_GT=0.5,
-    PRIMER_WT_TM_LT=0.1,
-    PRIMER_WT_TM_HT=0.05,
-    PRIMER_PAIR_WT_DIFF_TM=0.3,
-    PRIMER_WT_HAIRPIN_TH=2,
-    PRIMER_WT_SELF_ANY_TH=1,
-    PRIMER_WT_SELF_END_TH=2,
-    PRIMER_PAIR_WT_COMPL_ANY_TH=1,
-    RIMER_PAIR_WT_COMPL_END_TH=2,
-    PRIMER_EXPLAIN_FLAG=1,
-    PRIMER_NUM_RETURN=per_target
-)
-
 verbose = False
 job_name = "Exon"
 protein_id = ""
-region = ""
+user_region = ""
 deletion = ""
 as_coord = ""
 output_d = ""
@@ -64,7 +187,7 @@ input_d = ""
 reference_file = ""
 reference_gff_file = ""
 variant_file = ""
-searches = []
+target_regions = []
 searches_coord = []
 start_exon = 1
 
@@ -94,7 +217,7 @@ for o, a in opts:
     elif o in "-p":
         protein_id = a
     elif o in "-r":
-        region = a
+        user_region = a
     elif o in "-d":
         deletion = a
     elif o in "-a":
@@ -135,12 +258,14 @@ if (as_coord != "") & (reference_file != ""):
         except:
             start = 0
             end = 0
-        searches.append([fh.fetch(region=regreg[0][0] + ":" + str(start - 50) + "-" + str(end + 500)), regreg[0][0],
-                         range(start - 50, end + 501)])
-        searches.append([fh.fetch(region=regreg[0][0] + ":" + str(start - 500) + "-" + str(end + 50)), regreg[0][0],
-                         range(start - 500, end + 51)])
+        target_regions.append(
+            [fh.fetch(region=regreg[0][0] + ":" + str(start - 50) + "-" + str(end + 500)), regreg[0][0],
+             range(start - 50, end + 501)])
+        target_regions.append(
+            [fh.fetch(region=regreg[0][0] + ":" + str(start - 500) + "-" + str(end + 50)), regreg[0][0],
+             range(start - 500, end + 51)])
     protein_id = ""
-    region = ""
+    user_region = ""
 
 if (deletion != "") & (reference_file != ""):
     exons = []
@@ -152,16 +277,16 @@ if (deletion != "") & (reference_file != ""):
         except:
             start = 0
             end = 0
-        searches.append([fh.fetch(
+        target_regions.append([fh.fetch(
             region=regreg[0][0] + ":" + str(start - flanking - 21) + "-" + str(start - 1)) + fh.fetch(
             region=regreg[0][0] + ":" + str(end + 1) + "-" + str(end + flanking + 21)), regreg[0][0],
-                         range(start - flanking - 21, start) + range(end + 1, end + flanking + 22)])
+                               range(start - flanking - 21, start) + range(end + 1, end + flanking + 22)])
     protein_id = ""
-    region = ""
+    user_region = ""
 
-if (region != "") & (reference_file != ""):
+if (user_region != "") & (reference_file != ""):
     exons = []
-    regreg = re.findall("(.+):(\d+)-(\d+)", region)
+    regreg = re.findall("(.+):(\d+)-(\d+)", user_region)
     with pysam.FastaFile(reference_file) as fh:
         try:
             start = int(regreg[0][1]) - flanking - 20
@@ -169,7 +294,7 @@ if (region != "") & (reference_file != ""):
         except:
             start = 0
             end = 0
-        searches.append(
+        target_regions.append(
             [fh.fetch(region=regreg[0][0] + ":" + str(start) + "-" + str(end)), regreg[0][0], range(start, end + 1)])
     protein_id = ""
 
@@ -189,152 +314,51 @@ if (protein_id != "") & (reference_gff_file != ""):
             except:
                 start = 0
                 end = 0
-            searches.append([fh.fetch(region=i[0] + ":" + str(start) + "-" + str(end)), i[0], range(start, end + 1)])
+            target_regions.append(
+                [fh.fetch(region=i[0] + ":" + str(start) + "-" + str(end)), i[0], range(start, end + 1)])
     fex.flush()
     fex.write("\n")
 
 fsint = open(output_d + "/resultforsintes.txt", "w")
 exon = 0
-for search in searches:
+for target_region in target_regions:
     exon += 1
-    if (region == "") & (as_coord == ""):
+    if (user_region == "") & (as_coord == ""):
         print "Exon " + str(exon) + " of " + str(len(exons)) + " is assaying..."
     if exon < start_exon:
         print "Skipping..."
         continue
     pairs = {}
-    sequence = re.sub('[^ACGTacgt]+', '', search[0])
-    l_quality = []
-    if variant_file != "":
-        vcf_reader = vcf.Reader(filename=variant_file)
-        for i in search[2]:
-            try:
-                variants = vcf_reader.fetch(search[1], i - 1, i)
-            except:
-                variants = vcf_reader.fetch(search[1][3:], i - 1, i)
-            qual = 0.0001
-            for variant in variants:
-                try:
-                    q = 1.0 - float(variant.INFO["CAF"][0])
-                    if q > qual:
-                        qual = q
-                except:
-                    pass
-            l_quality.append(int(-10.0 * math.log10(qual)))
+    sequence = re.sub('[^ACGTacgt]+', '', target_region[0])
+
+    l_quality = get_pseudo_qualities_from_VCF(variant_file, target_region)
 
     right_edge = len(sequence) - flanking
     left_edge = flanking
     if as_coord != "":
         right_edge = left_edge + 1
-    print len(sequence)
-    print len(l_quality)
 
-    for i in range(left_edge, right_edge, 50):
-        target_length = right_edge - i
-        if target_length > max_target_length:
-            target_length = max_target_length
+    pairs = get_candidate_pairs(sequence, left_edge, right_edge, 50)
 
-        p3seq['SEQUENCE_TEMPLATE'] = sequence
-
-        if variant_file != "":
-            p3seq['SEQUENCE_QUALITY'] = l_quality
-        else:
-            p3prim['PRIMER_WT_SEQ_QUAL'] = 0
-            p3prim['PRIMER_WT_END_QUAL'] = 0
-
-        if as_coord == "":
-            if deletion == "":
-                p3seq['SEQUENCE_TARGET'] = [i, target_length]
-            else:
-                p3seq['SEQUENCE_TARGET'] = [(flanking + 20), 2]
-        else:
-            if exon < 2:
-                p3seq['SEQUENCE_FORCE_LEFT_END'] = 50
-            else:
-                p3seq['SEQUENCE_FORCE_RIGHT_END'] = 500
-
-        result = primer3.bindings.designPrimers(p3seq, p3prim)
-
-        for i in xrange(per_target):
-            si = str(i)
-            spair = (result['PRIMER_LEFT_' + si + '_SEQUENCE'], result['PRIMER_RIGHT_' + si + '_SEQUENCE'])
-            pairs[spair] = [
-                result['PRIMER_LEFT_' + si][0] + result['PRIMER_LEFT_' + si][1] + 1,
-                result['PRIMER_RIGHT_' + si][0] - result['PRIMER_RIGHT_' + si][1],
-                result['PRIMER_PAIR_' + si + '_PENALTY'],
-                0
-            ]
-
-        for pair in pairs:
-            if (pair[0][-1] in set("ATat")) | (pair[1][-1] in set("ATat")):
-                pairs[pair][2] += 1
     print ("primers: " + str(len(pairs)))
-    s = ""
-    i = 0
-    complete = 0
-    for pair in pairs:
-        i += 1
-        complete += 1
-        s += "_".join(pair) + "\t" + pair[0] + "\t" + pair[1] + "\n"
-        if (i >= per_tntblast) | (pair == pairs.keys()[-1]):
-            if verbose: print s
-            print ("Tntblast: " + str(complete) + " of " + str(len(pairs)))
-            proc = subprocess.Popen((
-                                            "nice -1 tntblast -i /dev/stdin -d " + reference_file + " -g -5 -l 1000 --temperature 330 --primer-clamp 1").split(),
-                                    stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-            proc.stdin.write(s)
-            s = ""
-            i = 0
-            proc.stdin.close()
-            result = proc.stdout.read()
-            proc.wait()
-            pcrs = re.findall("name = (\w+)", result)
-            for pcr in pcrs:
-                pairs[tuple(pcr.split('_'))][3] += 1
-                pairs[tuple(pcr.split('_'))][2] += penalty_PCR_product
+
+    pairs = add_penalty_for_non_specific_pairs(pairs)
+
     print ("Computing best way...")
-    ways = []
     f = open(output_d + "/Exon_" + str(exon) + '_specprimers.txt', 'w')
     f.write("left edge " + str(left_edge) + ", right edge " + str(right_edge) + "\n")
+
     for pair in pairs:
         if (pairs[pair][3] == 0) & (deletion == ""):
             pairs[pair][2] += 2 * penalty_PCR_product
 
-    pairssort = sorted(pairs, key=lambda d: pairs[d][2])
-    for pair in pairssort:
+    sorted_pairs = sorted(pairs, key=lambda d: pairs[d][2])
+    for pair in sorted_pairs:
         f.write(pair[0] + "\t" + pair[1] + "\t" + "\t" + str(pairs[pair][0]) + "\t" + str(pairs[pair][1]) + "\t" + str(
             pairs[pair][2]) + "\n")
     f.close()
 
-    graph = {"START": []}
-    for pair1 in pairs:
-        if pairs[pair1][0] < left_edge: graph["START"].append(pair1)
-        if pairs[pair1][1] > right_edge:
-            graph[pair1] = graph.get(pair1, [])
-            graph[pair1].append("END")
-        for pair2 in pairs:
-            if pairs[pair2][0] < (pairs[pair1][1] - overlap):
-                graph[pair1] = graph.get(pair1, [])
-                graph[pair1].append(pair2)
-
-    pairs["END"] = [0, 0, 0, 0]
-    Visited = {}
-    to_visit = {"START": 0}
-    Paths = {"START": ["START"]}
-    while to_visit:
-        v = min(to_visit, key=lambda x: to_visit[x])
-        Visited[v] = to_visit[v]
-        del to_visit[v]
-        for w in graph.get(v, []):
-            if w not in Visited:
-                vwLength = Visited[v] + ((pairs[w][2] - penalty_PCR_product) ** 2) + penalty_base_level
-                if (w not in to_visit) or (vwLength < to_visit[w]):
-                    to_visit[w] = vwLength
-                    Paths[w] = Paths[v] + [w]
-    try:
-        best_way = Paths["END"][1:-1]
-    except:
-        best_way = []
+    best_way = get_the_best_way(pairs, left_edge, right_edge)
 
     f = open(output_d + "/Exon_" + str(exon) + '_resultprimers.txt', 'w')
     f.write("left edge " + str(left_edge) + ", right edge " + str(right_edge) + "\n")
@@ -350,12 +374,12 @@ for search in searches:
         if deletion != "":
             penalty += (pairs[pair][2] - 0) ** 2
         else:
-            penalty += (pairs[pair][2] - 100) ** 2
+            penalty += (pairs[pair][2] - penalty_PCR_product) ** 2
         f.write(pair[0] + "\t" + pair[1] + "\t" + "\t" + str(pairs[pair][0]) + "\t" + str(pairs[pair][1]) + "\t" + str(
             pairs[pair][2]) + "\n")
         f.flush()
         prname = job_name
-        if region == "":
+        if user_region == "":
             prname += "_" + str(exon)
         if len(best_way) > 1:
             prname += "_" + str(prpair)
