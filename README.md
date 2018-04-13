@@ -2,7 +2,8 @@
 PrimerWay is a pipeline, which would facilitate the process of large-scale primer design for the analysis of entire coding sequence of the gene in an automatic mode. It obtains the sequence of interest with flanking regions using protein_id or genome coordinates from the reference genome. It uses Primer3 to design set of primer pair candidates. The choice is optimized to avoid frequent variants in the primer sequence extracted from the common subset of the dbSNP database. ThermonucleotideBLAST is used for the check of pair specificity. As result, the optimal set of overlapped pairs is generated.
 
 ## Installation
-PrimerWay is a simple Python script which requires installed [Primer3-py][1], [ThermonucleotideBLAST][2], and [pysam][3].
+PrimerWay is a simple Python script which requires installed [Primer3-py][1], [ThermonucleotideBLAST][2], [pysam][3], and [PyVCF][4].
+
 You can easily install PrimerWay with docker:
 ```
 docker run -it --rm -v $PWD/data:/data primerway bash
@@ -16,7 +17,7 @@ wget http://github.com/zoldrax/primer-way/raw/master/primerway.py
 chmod +x primerway.py
 ```
 
-#### Get and Install [Primer3-py][1] [pysam] [3] and [PyVCF] [4]
+#### Get and Install [Primer3-py][1] [pysam][3] and [PyVCF][4]
 ```
 pip install primer3-py pysam pyvcf
 ```
