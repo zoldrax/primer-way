@@ -8,4 +8,4 @@ RUN apt-get update && apt-get install -y build-essential libgomp1 wget git && \
 RUN cd /opt && git clone -b test https://github.com/zoldrax/primer-way.git
 ENV PATH="/opt/primer-way:${PATH}"
 WORKDIR /data
-CMD ["echo 'you can use next commands%\n primerway.py - common script see README\n download_GRCh38.sh -download human reference \n makeprimers_BRCA1.sh - example run with GRCh38\n protein_id prefix NP_number'"]
+CMD ["start.sh"]
