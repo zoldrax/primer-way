@@ -27,7 +27,7 @@ pip install primer3-py pysam pyvcf
 wget http://public.lanl.gov/jgans/tntblast/tntblast-2.04.tar.gz
 tar zvfx tntblast-2.04.tar.gz
 cd tntblast-2.04
-./configure --enable-mpi
+./configure --enable-openmp
 make
 sudo make install
 cd ..

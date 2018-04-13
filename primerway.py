@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 import ConfigParser
 import getopt
 import gzip
@@ -150,6 +150,7 @@ try:
     opts, args = getopt.getopt(sys.argv[1:], 'hvG:R:V:i:o:p:r:a:n:s:d:c:')
 except:
     opts, args = [], []
+if len(opts)==0 : print "Type -h for help"
 text_width = 60
 verbose = False
 job_name = "Exon"
