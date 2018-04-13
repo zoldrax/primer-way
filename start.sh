@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "You can use next commands:\n primerway.py - common script see README\n download_GRCh38.sh - download human reference \n makeprimers_BRCA1.sh - example run with human reference\n protein_id.sh prefix NP_number - create primers by protein id (like NP_12345), the first parameter is any prefix"
