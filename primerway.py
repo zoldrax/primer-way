@@ -93,7 +93,7 @@ def add_penalty_for_non_specific_pairs(candidate_pairs):
         i += 1
         complete += 1
         s += "_".join(pair) + "\t" + pair[0] + "\t" + pair[1] + "\n"
-        if (i >= config.get("tntBLAST", "pairs_per_run")) | (pair == candidate_pairs.keys()[-1]):
+        if (i >= config.getint("tntBLAST", "pairs_per_run")) | (pair == candidate_pairs.keys()[-1]):
             if verbose: print s
             print ("Tntblast: " + str(complete) + " of " + str(len(candidate_pairs)))
             proc = subprocess.Popen(
