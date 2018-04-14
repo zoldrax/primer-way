@@ -6,8 +6,12 @@ PrimerWay is a simple Python script which requires installed [Primer3-py][1], [T
 
 You can easily install PrimerWay with docker:
 ```
-docker run -it --rm -v $PWD/data:/data primerway bash
+mkdir data
+docker run -it --rm -v $PWD/data:/data zoldrax/primer-way download_GRCh38.sh
+docker run -it --rm -v $PWD/data:/data zoldrax/primer-way protein_id.sh BRCA1 NP_009231
 ```
+The download is needed only once, and about 5 Gb of free disk space is needed.
+"BRCA1" is the prefix you may choose.
 
 or do subsequent steps without docker instead:
 
