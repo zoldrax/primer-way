@@ -13,6 +13,7 @@ import primer3
 import pysam
 import vcf
 
+
 def get_pseudo_qualities_from_VCF(VCF_file, target_region):
     pseudo_qualities = []
     if VCF_file != "":
@@ -21,7 +22,11 @@ def get_pseudo_qualities_from_VCF(VCF_file, target_region):
             try:
                 variants = vcf_reader.fetch(target_region[1], i - 1, i)
             except:
-                variants = vcf_reader.fetch(target_region[1][3:], i - 1, i)
+                try:
+                    variants = vcf_reader.fetch(target_region[1].replace("chrM", "chrMT", 1).replace("chr", "", 1),
+                                                i - 1, i)
+                except:
+                    variants = []
             qual = 0.0001
             for variant in variants:
                 try:
@@ -31,7 +36,10 @@ def get_pseudo_qualities_from_VCF(VCF_file, target_region):
                 except:
                     pass
             pseudo_qualities.append(int(-10.0 * math.log10(qual)))
+        if verbose:
+            print len(pseudo_qualities), pseudo_qualities
     return pseudo_qualities
+
 
 def get_candidate_pairs(sequence, left_edge, right_edge, step):
     candidate_pairs = {}
@@ -85,6 +93,7 @@ def get_candidate_pairs(sequence, left_edge, right_edge, step):
                 candidate_pairs[pair][2] += 1
     return candidate_pairs
 
+
 def add_penalty_for_non_specific_pairs(candidate_pairs):
     s = ""
     i = 0
@@ -111,6 +120,7 @@ def add_penalty_for_non_specific_pairs(candidate_pairs):
                 candidate_pairs[tuple(pcr.split('_'))][3] += 1
                 candidate_pairs[tuple(pcr.split('_'))][2] += config.getfloat("PrimerWay", "penalty_PCR_product")
     return candidate_pairs
+
 
 def get_the_best_way(penalised_pairs, left_edge, right_edge):
     graph = {"START": []}
@@ -146,11 +156,12 @@ def get_the_best_way(penalised_pairs, left_edge, right_edge):
         the_best_way = []
     return the_best_way
 
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'hvG:R:V:i:o:p:r:a:n:s:d:c:')
 except:
     opts, args = [], []
-if len(opts)==0 : print "Type -h for help"
+if len(opts) == 0: print "Type -h for help"
 text_width = 60
 verbose = False
 job_name = "Exon"
@@ -323,8 +334,9 @@ for target_region in target_regions:
         print "Skipping..."
         continue
     pairs = {}
-    sequence = re.sub('[^ACGTacgt]+', '', target_region[0])
-
+    sequence = re.sub('[^ACGTNacgtn]+', '', target_region[0])
+    if verbose:
+        print len(sequence), sequence
     l_quality = get_pseudo_qualities_from_VCF(variant_file, target_region)
 
     right_edge = len(sequence) - config.getint("PrimerWay", "flanking")
