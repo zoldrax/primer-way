@@ -4,7 +4,7 @@ PrimerWay is a pipeline, which would facilitate the process of large-scale prime
 ## Installation
 PrimerWay is a simple Python script which requires installed [Primer3-py][1], [ThermonucleotideBLAST][2], [pysam][3], and [PyVCF][4].
 
-You can easily install PrimerWay with docker:
+You can easily install PrimerWay with [docker][8]:
 ```
 mkdir data
 docker run -it --rm -v $PWD/data:/data zoldrax/primer-way download_GRCh38.sh
@@ -65,3 +65,4 @@ The work has been supported by RSF grant [#16-45-02011][7].
 [5]: http://www.ncbi.nlm.nih.gov/grc/human
 [6]: http://www.ncbi.nlm.nih.gov/SNP
 [7]: http://rscf.ru/en/enprjcard?rid=16-45-02011
+[8]: http://hub.docker.com/r/zoldrax/primer-way
