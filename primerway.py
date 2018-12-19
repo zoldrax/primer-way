@@ -20,24 +20,29 @@ def get_pseudo_qualities_from_VCF(VCF_file, target_region):
         vcf_reader = vcf.Reader(filename=VCF_file)
         for i in target_region[2]:
             try:
-                variants = vcf_reader.fetch(target_region[1], i - 1, i)
+                variants = vcf_reader.fetch(target_region[1], i, i+1)
             except:
                 try:
                     variants = vcf_reader.fetch(target_region[1].replace("chrM", "chrMT", 1).replace("chr", "", 1),
-                                                i - 1, i)
+                                                i, i+1)
                 except:
                     variants = []
             qual = 0.0001
+            ref="-"
             for variant in variants:
                 try:
+                    ref=variant.REF
                     q = 1.0 - float(variant.INFO["CAF"][0])
                     if q > qual:
                         qual = q
                 except:
                     pass
             pseudo_qualities.append(int(-10.0 * math.log10(qual)))
+            if verbose:
+                sys.stdout.write (ref)
         if verbose:
-            print len(pseudo_qualities), pseudo_qualities
+            print
+            print (len(pseudo_qualities), pseudo_qualities)
     return pseudo_qualities
 
 
@@ -253,11 +258,11 @@ if (as_coord != "") & (reference_file != ""):
             start = 0
             end = 0
         target_regions.append(
-            [fh.fetch(region=regreg[0][0] + ":" + str(start - 50) + "-" + str(end + 500)), regreg[0][0],
-             range(start - 50, end + 501)])
+            [fh.fetch(reference=regreg[0][0], start=(start - 50), end=(end + 500)), regreg[0][0],
+             range(start - 50, end + 500)])
         target_regions.append(
-            [fh.fetch(region=regreg[0][0] + ":" + str(start - 500) + "-" + str(end + 50)), regreg[0][0],
-             range(start - 500, end + 51)])
+            [fh.fetch(reference=regreg[0][0], start=(start - 500), end=(end + 50)), regreg[0][0],
+             range(start - 500, end + 50)])
     protein_id = ""
     user_region = ""
 
@@ -266,23 +271,20 @@ if (deletion != "") & (reference_file != ""):
     regreg = re.findall("(.+):(\d+)-(\d+)", deletion)
     with pysam.FastaFile(reference_file) as fh:
         try:
-            start = int(regreg[0][1])
+            start = int(regreg[0][1])-1
             end = int(regreg[0][2])
         except:
             start = 0
             end = 0
         target_regions.append([
-            fh.fetch(region=regreg[0][0] + ":" +
-                            str(start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay",
-                                                                                               "min_overlap") - 1) +
-                            "-" + str(start - 1)) +
-            fh.fetch(region=regreg[0][0] + ":" +
-                            str(end + 1) + "-" + str(end + config.getint("PrimerWay", "flanking") +
-                                                     config.getint("PrimerWay", "min_overlap") + 1)),
+            fh.fetch(reference=regreg[0][0], start=(start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay",
+                          "min_overlap")), end=(start - 1)) +
+            fh.fetch(reference=regreg[0][0], start=(end + 1), end=(end + config.getint("PrimerWay", "flanking") +
+                                                     config.getint("PrimerWay", "min_overlap"))),
             regreg[0][0], range(start - config.getint("PrimerWay", "flanking") -
                                 config.getint("PrimerWay", "min_overlap") - 1, start) +
             range(end + 1, end + config.getint("PrimerWay", "flanking") +
-                  config.getint("PrimerWay", "min_overlap") + 2)
+                  config.getint("PrimerWay", "min_overlap"))
         ])
     protein_id = ""
     user_region = ""
@@ -293,13 +295,13 @@ if (user_region != "") & (reference_file != ""):
     with pysam.FastaFile(reference_file) as fh:
         try:
             start = int(regreg[0][1]) - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay",
-                                                                                               "min_overlap")
-            end = int(regreg[0][2]) + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap")
+                                                                                               "min_overlap") - 1
+            end = int(regreg[0][2]) + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap") 
         except:
             start = 0
             end = 0
         target_regions.append(
-            [fh.fetch(region=regreg[0][0] + ":" + str(start) + "-" + str(end)), regreg[0][0], range(start, end + 1)])
+            [fh.fetch(reference=regreg[0][0], start=(start), end=(end)), regreg[0][0], range(start, end)])
     protein_id = ""
 
 if (protein_id != "") & (reference_gff_file != ""):
@@ -314,13 +316,15 @@ if (protein_id != "") & (reference_gff_file != ""):
         fex.write("\t".join(i) + "\n")
         with pysam.FastaFile(reference_file) as fh:
             try:
-                start = int(i[1]) - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay", "min_overlap")
+                start = int(i[1]) - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay", "min_overlap")-1
                 end = int(i[2]) + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap")
             except:
                 start = 0
                 end = 0
+            if verbose:
+                print (i[0])
             target_regions.append(
-                [fh.fetch(region=i[0] + ":" + str(start) + "-" + str(end)), i[0], range(start, end + 1)])
+                [fh.fetch(reference=i[0], start=(start), end=(end)), i[0], range(start, end)])
     fex.flush()
     fex.write("\n")
 
@@ -336,7 +340,8 @@ for target_region in target_regions:
     pairs = {}
     sequence = re.sub('[^ACGTNacgtn]+', '', target_region[0])
     if verbose:
-        print len(sequence), sequence
+        print (len(sequence))
+        print (sequence)
     l_quality = get_pseudo_qualities_from_VCF(variant_file, target_region)
 
     right_edge = len(sequence) - config.getint("PrimerWay", "flanking")
@@ -348,7 +353,7 @@ for target_region in target_regions:
 
     print ("primers: " + str(len(pairs)))
 
-    pairs = add_penalty_for_non_specific_pairs(pairs)
+    #pairs = add_penalty_for_non_specific_pairs(pairs)
 
     print ("Computing best way...")
     f = open(output_d + "/Exon_" + str(exon) + '_specprimers.txt', 'w')
@@ -372,6 +377,9 @@ for target_region in target_regions:
     print ("The best way consists " + str(len(best_way)) + " pairs.")
     penalty = 0
     prpair = 0
+
+    if verbose:
+        print(left_edge, right_edge, config.getint("PrimerWay", "min_overlap"))
     specchar = dict()
     specchar[left_edge + config.getint("PrimerWay", "min_overlap")] = "{"
     specchar[right_edge - config.getint("PrimerWay", "min_overlap")] = "}"
@@ -403,6 +411,8 @@ for target_region in target_regions:
     print ("Penalty summ sqr = " + str(penalty))
     f.write("Penalty saumm sqr = " + str(penalty) + "\n\n")
     n = 0
+    if verbose:
+        print(specchar)
     for i in xrange(0, len(sequence)):
         f.write(specchar.get(i, "") + sequence[i])
         if n > text_width:
