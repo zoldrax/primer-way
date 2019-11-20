@@ -377,6 +377,7 @@ for target_region in target_regions:
     best_way = get_the_best_way(pairs, left_edge, right_edge)
 
     f = open(output_d + "/Exon_" + str(exon) + '_resultprimers.txt', 'w')
+    f.write(job_name + "_" + str(exon) + "\n")
     f.write("left edge " + str(left_edge) + ", right edge " + str(right_edge) + "\n")
     f.write("The best way consists " + str(len(best_way)) + " pairs.\n\n")
     print ("The best way consists " + str(len(best_way)) + " pairs.")
@@ -398,6 +399,8 @@ for target_region in target_regions:
             pairs[pair][2]) + "\n")
         f.flush()
         prname = job_name
+        if pairs[pair][2] >= 200 or (deletion != "" and pairs[pair][2] >= 100):
+            prname = "_NS_" + prname
         if user_region == "":
             prname += "_" + str(exon)
         if len(best_way) > 1:
