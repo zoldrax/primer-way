@@ -399,7 +399,8 @@ for target_region in target_regions:
             pairs[pair][2]) + "\n")
         f.flush()
         prname = job_name
-        if pairs[pair][2] >= 200 or (deletion != "" and pairs[pair][2] >= 100):
+        if (pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product") * 2) or (
+                deletion != "" and pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product")):
             prname = "_NS_" + prname
         if user_region == "":
             prname += "_" + str(exon)
