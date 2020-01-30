@@ -399,8 +399,7 @@ for target_region in target_regions:
             pairs[pair][2]) + "\n")
         f.flush()
         prname = job_name
-        if (pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product") * 2) or (
-                deletion != "" and pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product")):
+        if pairs[pair][2] >= 200 or (deletion != "" and pairs[pair][2] >= 100):
             prname = "_NS_" + prname
         if user_region == "":
             prname += "_" + str(exon)
@@ -411,26 +410,26 @@ for target_region in target_regions:
         fsint.flush()
         if (protein_id != "") & (reference_gff_file != ""):
             fex.write(prname + "\t" + str(pairs[pair][2]) + "\n")
-        fex.flush()
+            fex.flush()
         specchar[pairs[pair][0] - len(pair[0]) + 1] = specchar.get(pairs[pair][0] - len(pair[0]) + 1, "") + "["
         specchar[pairs[pair][0] + 1] = ">" + specchar.get(pairs[pair][0] + 1, "")
         specchar[pairs[pair][1]] = specchar.get(pairs[pair][1], "") + "<"
         specchar[pairs[pair][1] + len(pair[1])] = "]" + specchar.get(pairs[pair][1] + len(pair[1]), "")
-        f.write("\n")
-        print("Penalty summ sqr = " + str(penalty))
-        f.write("Penalty saumm sqr = " + str(penalty) + "\n\n")
-        n = 0
-        if verbose:
-            print(specchar)
-        for i in range(0, len(sequence)):
-            f.write(specchar.get(i, "") + sequence[i])
+    f.write("\n")
+    print("Penalty summ sqr = " + str(penalty))
+    f.write("Penalty saumm sqr = " + str(penalty) + "\n\n")
+    n = 0
+    if verbose:
+        print(specchar)
+    for i in range(0, len(sequence)):
+        f.write(specchar.get(i, "") + sequence[i])
         if n > text_width:
             f.write("\n")
-        n = 0
+            n = 0
 
         n += 1
-        f.write("\n\n{...} - target DNA sequence\n[...> - forward primer\n<...] - reverse primer")
-        f.close()
-        fsint.close()
-        if (protein_id != "") & (reference_gff_file != ""):
-            fex.close()
+    f.write("\n\n{...} - target DNA sequence\n[...> - forward primer\n<...] - reverse primer")
+    f.close()
+fsint.close()
+if (protein_id != "") & (reference_gff_file != ""):
+    fex.close()
