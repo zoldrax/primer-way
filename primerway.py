@@ -5,11 +5,11 @@ import gzip
 import json
 import math
 import os
+import primer3
+import pysam
 import re
 import subprocess
 import sys
-import primer3
-import pysam
 import vcf
 
 
@@ -285,7 +285,7 @@ if (deletion != "") & (reference_file != ""):
             regreg[0][0],
             list(range(start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay", "min_overlap") - 0,
                        start + 1)) +
-            list(range(end -1,
+            list(range(end - 1,
                        end + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap")))
         ])
     protein_id = ""
