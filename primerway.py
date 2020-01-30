@@ -40,9 +40,9 @@ def get_pseudo_qualities_from_VCF(VCF_file, target_region):
             if verbose:
                 sys.stdout.write(ref)
         if verbose:
-            print ("")
-            print (len(pseudo_qualities))
-            print (pseudo_qualities)
+            print("")
+            print(len(pseudo_qualities))
+            print(pseudo_qualities)
     return pseudo_qualities
 
 
@@ -108,8 +108,8 @@ def add_penalty_for_non_specific_pairs(candidate_pairs):
         complete += 1
         s += "_".join(pair) + "\t" + pair[0] + "\t" + pair[1] + "\n"
         if (i >= config.getint("tntBLAST", "pairs_per_run")) | (pair == list(candidate_pairs.keys())[-1]):
-            if verbose: print (s)
-            print ("Tntblast: " + str(complete) + " of " + str(len(candidate_pairs)))
+            if verbose: print(s)
+            print("Tntblast: " + str(complete) + " of " + str(len(candidate_pairs)))
             proc = subprocess.Popen(
                 (config.get("tntBLAST", "run_command") + " -i /dev/stdin -d " + reference_file).split(),
                 stdout=subprocess.PIPE, stdin=subprocess.PIPE
@@ -166,7 +166,7 @@ try:
     opts, args = getopt.getopt(sys.argv[1:], 'hvG:R:V:i:o:p:r:a:n:s:d:c:')
 except:
     opts, args = [], []
-if len(opts) == 0: print ("Type -h for help")
+if len(opts) == 0: print("Type -h for help")
 text_width = 60
 verbose = False
 job_name = "Exon"
@@ -188,19 +188,19 @@ for o, a in opts:
     if o == "-v":
         verbose = True
     elif o in ("-h", "--help"):
-        print ("-R : reference unzipped fasta file")
-        print ("-G : reference gzipped GFF description file")
-        print ("-V : variants gzipped VCF dbSNP file")
-        print ("-v : verbose mode for debug")
-        print ("-i : input directory")
-        print ("-o : output directory")
-        print ("-p : protein ID for automatic exon CDS extraction (example NP_000442.1)")
-        print ("-d : deletion region coordinates (example: 11:121212-454545)")
-        print ("-r : target region coordinates (example: 11:121212-454545)")
-        print ("-a : target nucleotide coordinate for allele specific (example: 11:121212)")
-        print ("-n : prefix for primer names")
-        print ("-s : start from exon number (default 1)")
-        print ("-c : set configuration file (default primerway.cfg)")
+        print("-R : reference unzipped fasta file")
+        print("-G : reference gzipped GFF description file")
+        print("-V : variants gzipped VCF dbSNP file")
+        print("-v : verbose mode for debug")
+        print("-i : input directory")
+        print("-o : output directory")
+        print("-p : protein ID for automatic exon CDS extraction (example NP_000442.1)")
+        print("-d : deletion region coordinates (example: 11:121212-454545)")
+        print("-r : target region coordinates (example: 11:121212-454545)")
+        print("-a : target nucleotide coordinate for allele specific (example: 11:121212)")
+        print("-n : prefix for primer names")
+        print("-s : start from exon number (default 1)")
+        print("-c : set configuration file (default primerway.cfg)")
         sys.exit()
 
     elif o in "-s":
@@ -235,7 +235,7 @@ config = configparser.ConfigParser()
 config.read(config_file)
 
 if output_d == "":
-    print ("Error: Output directory is needed")
+    print("Error: Output directory is needed")
     sys.exit()
 try:
     os.stat(output_d)
@@ -243,7 +243,7 @@ except:
     try:
         os.mkdir(output_d)
     except:
-        print ("Error: Can not create output directory")
+        print("Error: Can not create output directory")
 
         sys.exit()
 
@@ -308,9 +308,9 @@ if (user_region != "") & (reference_file != ""):
 
 if (protein_id != "") & (reference_gff_file != ""):
     with gzip.open(reference_gff_file, "r") as csvfile:
-        print ("Searching exons for transcript ID = " + protein_id + " ...")
+        print("Searching exons for transcript ID = " + protein_id + " ...")
         exons = re.findall("(chr[\dXY]+)\t.+\tCDS\t(\d+)\t(\d+)\t.+protein_id=" + protein_id, csvfile.read().decode())
-    print ("Found " + str(len(exons)) + " exons.")
+    print("Found " + str(len(exons)) + " exons.")
     fex = open(output_d + "/Exon_list.txt", 'w')
     fex.write("Coord without flanking " + str(config.getint("PrimerWay", "flanking") +
                                               config.getint("PrimerWay", "min_overlap")) + "\n")
@@ -325,7 +325,7 @@ if (protein_id != "") & (reference_gff_file != ""):
                 start = 0
                 end = 0
             if verbose:
-                print (i[0])
+                print(i[0])
             target_regions.append(
                 [fh.fetch(reference=i[0], start=(start), end=(end)), i[0], range(start, end)])
     fex.flush()
@@ -336,17 +336,17 @@ exon = 0
 for target_region in target_regions:
     exon += 1
     if (user_region == "") & (as_coord == ""):
-        print ("Exon " + str(exon) + " of " + str(len(exons)) + " is assaying...")
+        print("Exon " + str(exon) + " of " + str(len(exons)) + " is assaying...")
     if exon < start_exon:
-        print ("Skipping...")
+        print("Skipping...")
         continue
     pairs = {}
     sequence = re.sub('[^ACGTNacgtn]+', '', target_region[0])
     if verbose:
-        print (len(sequence))
-        print ("===")
-        print (sequence)
-        print ("===")
+        print(len(sequence))
+        print("===")
+        print(sequence)
+        print("===")
     l_quality = get_pseudo_qualities_from_VCF(variant_file, target_region)
 
     right_edge = len(sequence) - config.getint("PrimerWay", "flanking") - 1
@@ -356,11 +356,11 @@ for target_region in target_regions:
 
     pairs = get_candidate_pairs(sequence, left_edge, right_edge, config.getint("PrimerWay", "Primer3_step"))
 
-    print ("primers: " + str(len(pairs)))
+    print("primers: " + str(len(pairs)))
 
     pairs = add_penalty_for_non_specific_pairs(pairs)
 
-    print ("Computing best way...")
+    print("Computing best way...")
     f = open(output_d + "/Exon_" + str(exon) + '_specprimers.txt', 'w')
     f.write("left edge " + str(left_edge) + ", right edge " + str(right_edge) + "\n")
 
@@ -380,7 +380,7 @@ for target_region in target_regions:
     f.write(job_name + "_" + str(exon) + "\n")
     f.write("left edge " + str(left_edge) + ", right edge " + str(right_edge) + "\n")
     f.write("The best way consists " + str(len(best_way)) + " pairs.\n\n")
-    print ("The best way consists " + str(len(best_way)) + " pairs.")
+    print("The best way consists " + str(len(best_way)) + " pairs.")
     penalty = 0
     prpair = 0
 
@@ -399,7 +399,8 @@ for target_region in target_regions:
             pairs[pair][2]) + "\n")
         f.flush()
         prname = job_name
-        if pairs[pair][2] >= 200 or (deletion != "" and pairs[pair][2] >= 100):
+        if (pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product") * 2) or (
+                deletion != "" and pairs[pair][2] >= config.getfloat("PrimerWay", "penalty_PCR_product")):
             prname = "_NS_" + prname
         if user_region == "":
             prname += "_" + str(exon)
@@ -410,26 +411,26 @@ for target_region in target_regions:
         fsint.flush()
         if (protein_id != "") & (reference_gff_file != ""):
             fex.write(prname + "\t" + str(pairs[pair][2]) + "\n")
-            fex.flush()
+        fex.flush()
         specchar[pairs[pair][0] - len(pair[0]) + 1] = specchar.get(pairs[pair][0] - len(pair[0]) + 1, "") + "["
         specchar[pairs[pair][0] + 1] = ">" + specchar.get(pairs[pair][0] + 1, "")
         specchar[pairs[pair][1]] = specchar.get(pairs[pair][1], "") + "<"
         specchar[pairs[pair][1] + len(pair[1])] = "]" + specchar.get(pairs[pair][1] + len(pair[1]), "")
-    f.write("\n")
-    print ("Penalty summ sqr = " + str(penalty))
-    f.write("Penalty saumm sqr = " + str(penalty) + "\n\n")
-    n = 0
-    if verbose:
-        print(specchar)
-    for i in range(0, len(sequence)):
-        f.write(specchar.get(i, "") + sequence[i])
+        f.write("\n")
+        print("Penalty summ sqr = " + str(penalty))
+        f.write("Penalty saumm sqr = " + str(penalty) + "\n\n")
+        n = 0
+        if verbose:
+            print(specchar)
+        for i in range(0, len(sequence)):
+            f.write(specchar.get(i, "") + sequence[i])
         if n > text_width:
             f.write("\n")
-            n = 0
+        n = 0
 
         n += 1
-    f.write("\n\n{...} - target DNA sequence\n[...> - forward primer\n<...] - reverse primer")
-    f.close()
-fsint.close()
-if (protein_id != "") & (reference_gff_file != ""):
-    fex.close()
+        f.write("\n\n{...} - target DNA sequence\n[...> - forward primer\n<...] - reverse primer")
+        f.close()
+        fsint.close()
+        if (protein_id != "") & (reference_gff_file != ""):
+            fex.close()
