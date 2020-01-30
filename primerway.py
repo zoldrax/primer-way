@@ -38,7 +38,7 @@ def get_pseudo_qualities_from_VCF(VCF_file, target_region):
                     pass
             pseudo_qualities.append(int(-10.0 * math.log10(qual)))
             if verbose:
-                sys.stdout.write(ref)
+                sys.stdout.write(ref[0])
         if verbose:
             print("")
             print(len(pseudo_qualities))
@@ -277,16 +277,16 @@ if (deletion != "") & (reference_file != ""):
             start = 0
             end = 0
         target_regions.append([
-            fh.fetch(reference=regreg[0][0],
-                     start=(start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay",
-                                                                                           "min_overlap")),
-                     end=(start - 1)) +
-            fh.fetch(reference=regreg[0][0], start=(end + 1), end=(end + config.getint("PrimerWay", "flanking") +
-                                                                   config.getint("PrimerWay", "min_overlap"))),
-            regreg[0][0], range(start - config.getint("PrimerWay", "flanking") -
-                                config.getint("PrimerWay", "min_overlap") - 1, start) +
-            range(end + 1, end + config.getint("PrimerWay", "flanking") +
-                  config.getint("PrimerWay", "min_overlap"))
+            fh.fetch(reference=regreg[0][0], start=(
+                    start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay", "min_overlap") - 0),
+                     end=(start + 1)) +
+            fh.fetch(reference=regreg[0][0], start=end - 1,
+                     end=(end + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap"))),
+            regreg[0][0],
+            list(range(start - config.getint("PrimerWay", "flanking") - config.getint("PrimerWay", "min_overlap") - 0,
+                       start + 1)) +
+            list(range(end -1,
+                       end + config.getint("PrimerWay", "flanking") + config.getint("PrimerWay", "min_overlap")))
         ])
     protein_id = ""
     user_region = ""
