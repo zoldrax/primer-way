@@ -5,7 +5,6 @@ RUN apt-get update && apt-get install -y build-essential libgomp1 wget git && \
         cd /tmp && tar zfx /opt/primer-way/tntblast*.tar.gz && rm /opt/primer-way/tntblast*.tar.gz* && cd /tmp/tntblast* && \
         ./configure --enable-openmp && make CXXFLAGS='-std=c++03 -O1' install && rm -R /tmp/tntblast* && \
         apt-get purge -y build-essential && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN cd /opt && git clone https://github.com/zoldrax/primer-way.git
 ENV PATH="/opt/primer-way:${PATH}"
 WORKDIR /data
 CMD ["start.sh"]
