@@ -34,7 +34,7 @@ wget http://public.lanl.gov/jgans/tntblast/tntblast-2.04.tar.gz
 tar zvfx tntblast-2.04.tar.gz
 cd tntblast-2.04
 ./configure --enable-openmp
-make
+make CXXFLAGS='-std=c++03 -O1'
 sudo make install
 cd ..
 ```
