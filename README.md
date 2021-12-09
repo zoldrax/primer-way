@@ -39,7 +39,7 @@ sudo make install
 cd ..
 ```
 
-#### Get Reference, Annotation, and Variants from [The Genome Reference Consortium][4] and [dbSNP][5]
+#### Get Reference, Annotation, and Variants from [The Genome Reference Consortium][5] and [dbSNP][6]
 ```
 wget ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.gz
 gzip -d GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.gz
