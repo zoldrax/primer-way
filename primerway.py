@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import vcf
+from datetime import datetime
 
 
 def get_pseudo_qualities_from_VCF(VCF_file, target_region):
@@ -75,9 +76,9 @@ def get_candidate_pairs(sequence, left_edge, right_edge, step):
                                             config.getint("PrimerWay", "min_overlap") * 2 + 1]
         else:
             if exon < 2:
-                p3seq['SEQUENCE_FORCE_LEFT_END'] = 50
+                p3seq['SEQUENCE_FORCE_LEFT_END'] = 49
             else:
-                p3seq['SEQUENCE_FORCE_RIGHT_END'] = 500
+                p3seq['SEQUENCE_FORCE_RIGHT_END'] = 499
 
         result = primer3.bindings.designPrimers(p3seq, p3prim)
 
@@ -331,7 +332,9 @@ if (protein_id != "") & (reference_gff_file != ""):
     fex.flush()
     fex.write("\n")
 
-fsint = open(output_d + "/resultforsintes.txt", "w")
+fsint = open(output_d + "/resultforsintes.txt", "a")
+fsint.write(
+    "# {time} {params}\n".format(time=datetime.now().strftime("%d.%m.%Y %H:%M:%S"), params=" ".join(sys.argv[1:])))
 exon = 0
 for target_region in target_regions:
     exon += 1
